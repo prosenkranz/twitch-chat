@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Twitch Chat</title>	
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<script src="//cdn.tmijs.org/js/1.2.1/tmi.min.js" integrity="sha384-eE0n7sm1W7DOUI2Xh5I4qSpZTe6hupAO0ovLfqEy0yVJtGRBNfssdmjbJhEYm6Bw" crossorigin="anonymous"></script>
+	<style type="text/css">
+		html *, * {
+			box-sizing: border-box;
+		}
+		body {
+			background: #111;
+			margin: 0;
+			font-family: Arial;
+			font-size: 11px;
+		}
+		#messages {
+			padding: 10px;
+			margin-bottom: 100px;
+			color: #fff;
+		}
+		#messages .message {
+			padding: 3px;
+		}
+		#messages #message-template {
+			display: none;
+		}
+		#messages .message-user {
+			font-weight: bold;
+			color: #7af;
+		}
+		#input {
+			position: absolute;
+			bottom: 110px;
+			border-top: 1px solid #333;
+			width: 100%;
+			padding: 10px;
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<div id="messages">
+			<div class="message" id="message-template">
+				<span class="message-user">
+					<span class="message-username"></span>:
+				</span>
+				<span class="message-text"></span>
+			</div>
+		</div>
+		<div id="input">
+			<input type="text" id="input-message" />
+			<input type="submit" id="input-submit" value="Send" onclick="onSendMessage();" />
+		</div>
+	</main>
+
+	<script type="text/javascript">
+		var USERNAME = "vaehx";
+
+		function onSendMessage() {
+			var text = $('#input-message').val();
+			if (text.length > 0) {
+				var messageElem = $('#message-template').clone();
+				messageElem.attr('id', '');
+				messageElem.find('.message-username').text(USERNAME);
+				messageElem.find('.message-text').text(text);
+				messageElem.appendTo('#messages');
+			}
+
+			$('#input-message').val("");
+		}
+	</script>
+</body>
+</html>

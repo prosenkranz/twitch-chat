@@ -43,31 +43,9 @@
 
 		controller.connect();
 
-		// -------------------------------------------------------------------------------------
-		
 		$(document).ready(function() {
 			view.onDocumentReady();
 		});
-
-		// -------------------------------------------------------------------------------------
-
-		function apiGet(path, callbackFn) {
-			var xhr = new XMLHttpRequest();
-			xhr.open("GET", "https://api.twitch.tv/kraken" + path, true);
-			xhr.setRequestHeader('Accept', 'application/vnd.twitchtv.v5+json');
-			xhr.setRequestHeader('Client-ID', CLIENT_ID);
-			xhr.responseType = "json";
-			xhr.addEventListener("load", function(ev) {
-				if (xhr.readyState == 4) {
-					if (xhr.status != 200) {
-						callbackFn(xhr.status, null, null);
-					} else {
-						callbackFn(null, null, xhr.response);
-					}
-				}
-			});
-			xhr.send();
-		}
 
 	</script>
 </body>

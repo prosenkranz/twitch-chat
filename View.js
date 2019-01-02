@@ -71,10 +71,42 @@ function View(controller, config) {
 	}
 
 	/**
+	 * @param badges should be in the form of
+	 * 	{
+	 * 		<badge-set>: {
+	 * 			versions: {
+	 * 				<version>: {
+	 * 					title: ...,
+	 * 					image_url_[1|2|4]x: ...,
+	 * 					...
+	 * 				}
+	 *			},
+	 *			...
+	 *		},
+	 *		...
+	 *	}
+	 */
+	var createBadgesHTML = function(user, badges) {
+		var html = "";
+		for (var badgeSet in user.badges) {
+			if (!(badgeSet in badges))
+				continue;
+			
+			var badgeVersion = user.badges[badgeSet];
+			if (!(badgeVersion in badges[badgeSet].versions))
+				continue;
+
+			var badge = badges[badgeSet].versions[badgeVersion];
+			html += '<img class="badge" src="' + badge['image_url_1x'] +'" title="' + badge['title'] + '" /> ';
+		}
+		return html;
+	}
+
+	/**
 	 * Adds a new message to the output
 	 */
 	this.appendChatMessage = function(timestamp, user, message, emotes) {
-		var messageElems = $('#messages .message').not('#message-template');
+		var messageElems = $('#messages .message').not('.debug-message').not('#message-template');
 
 		// If timestamp not given, use current latest timestamp
 		if (timestamp == null || timestamp == -1) {
@@ -83,8 +115,8 @@ function View(controller, config) {
 				timestamp = lastMessageIdData.timestamp;
 			}
 			else {
-				// No messages yet. First message will get timestamp 0
-				timestamp = 0;
+				// No messages yet. First message will get current timestamp
+				timestamp = currentTimeMillis();
 			}
 		}
 		
@@ -95,14 +127,7 @@ function View(controller, config) {
 		newMessageElem.find('.message-username').text(user.displayName);
 
 		// Badges
-		var badgesHtml = "";
-		if (user.isSubscriber) {
-			badgesHtml += '<span class="badge badge-subscriber">S</span> ';
-		}
-		if (user.isModerator) {
-			badgesHtml += '<span class="badge badge-moderator">M</span> ';
-		}
-
+		var badgesHtml = createBadgesHTML(user, controller.badges);
 		newMessageElem.find('.message-badges').html(badgesHtml);
 		
 		// Process message
@@ -146,6 +171,15 @@ function View(controller, config) {
 				$('#messages .message').not('#message-template').slice(0, numMessages - maxMessages).remove();
 			}
 		}
+	}
+
+	this.appendDebugMessage = function(message) {
+		var newMessageElem = $('#message-template').clone();
+		newMessageElem.attr('id', '');
+		newMessageElem.addClass('debug-message');
+		newMessageElem.find('.message-user').remove();
+		newMessageElem.find('.message-text').html(message);
+		$('#messages').append(newMessageElem);
 	}
 
 	this.sendCurrentMessage = function() {

@@ -29,6 +29,9 @@ main {
 	min-height: 25px;
 	line-height: 20px;
 }
+#messages .message.mention {
+	background-color: #411;
+}
 #messages .message.debug-message {
 	color: #bbb;
 }

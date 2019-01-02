@@ -126,6 +126,10 @@ function View(controller, config) {
 		newMessageElem.find('.message-user').css('color', user.color);
 		newMessageElem.find('.message-username').text(user.displayName);
 
+		// Mentions
+		if (message.includes(config.get('username')))
+			newMessageElem.addClass('mention');
+
 		// Badges
 		var badgesHtml = createBadgesHTML(user, controller.badges);
 		newMessageElem.find('.message-badges').html(badgesHtml);

@@ -15,7 +15,7 @@ function View(controller, config) {
 
 	var decodeMessageId = function(messageId) {
 		var parts = messageId.split(":");
-		return {username: parts[0], timestamp: parts[1]}
+		return {username: parts[0], timestamp: parseInt(parts[1])}
 	}
 
 	var injectOfficialEmotes = function(text, emotes) {
@@ -43,7 +43,6 @@ function View(controller, config) {
 	 * @param emotesets should be in the form of {<emote-set>: [ {code: <emote-code>, id: <emote-id>}, ... ], ...}
 	 */
 	var injectOfficialEmotesFromEmotesets = function(text, emotesets) {
-		console.debug(emotesets);
 		var words = text.split(/\s+/);
 		words.forEach(function(word, i) {
 			// Find word in emote codes

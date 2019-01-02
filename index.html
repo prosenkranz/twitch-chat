@@ -11,15 +11,17 @@
 			box-sizing: border-box;
 		}
 		body {
-			background: #222;
+			background: #000;
 			margin: 0;
 			font-family: Arial;
-			font-size: 12px;
+			font-size: 12.5px;
 		}
 		main {
+			background: #222;
 			position: absolute;
 			height: 100%;
 			width: 100%;
+			max-width: 400px;
 			overflow: hidden;
 			padding-bottom: 50px;
 		}
@@ -33,12 +35,36 @@
 		}
 		#messages .message {
 			padding: 3px;
+			min-height: 25px;
+			line-height: 20px;
 		}
 		#messages #message-template {
 			display: none;
 		}
 		#messages .message-time {
 			color: #666;
+		}
+		#messages .badge {
+			display: inline-block;
+			vertical-align: baseline;
+			width: 15px;
+			height: 15px;
+			line-height: 15px;
+			font-size: 11px;
+			text-align: center;
+			background-color: #bbb;
+			color: #fff;
+			border: 1px solid #fff;
+			font-weight: bold;
+		}
+		#messages .badge-subscriber {
+			background-color: #05b;
+		}
+		#messages .badge-moderator {
+			background-color: rgb(0, 122, 0);
+		}
+		#messages .badge-admin {
+			background-color: #f33;
 		}
 		#messages .message-user {
 			font-weight: bold;
@@ -47,6 +73,13 @@
 		#messages .message-debug {
 			font-size: 11px;
 			color: #aaa;
+		}
+		#messages .message-text .emoticon-wrapper {
+			display: inline-block;
+		}
+		#messages .message-text .emoticon {
+			max-height: 28px;
+			margin-bottom: -0.25em;
 		}
 		#input {
 			position: absolute;
@@ -80,6 +113,7 @@
 			<div class="message" id="message-template">
 				<span class="message-time"></span>
 				<span class="message-user">
+					<span class="message-badges"></span>
 					<span class="message-username"></span>:
 				</span>
 				<span class="message-text"></span>
@@ -93,11 +127,18 @@
 	</main>
 
 	<script type="text/javascript">
+
+		// -------------------------------------------------------------------------------------
+
+		var pauseAutoScroll = false;
+		
+		// -------------------------------------------------------------------------------------
+
 		// Start client
 		var client = new tmi.client({
 			options: {
 				clientId: CLIENT_ID,
-				debug: true
+				debug: false
 			},
 			connection: {
 				reconnect: true,
@@ -110,6 +151,8 @@
 		});
 
 		client.connect();
+
+		// -------------------------------------------------------------------------------------
 
 		/**
 		 * Message from server handler
@@ -128,22 +171,22 @@
 		 * A standard message (someone typed in chat)
 		 */
 		function onChatMessage(channel, userstate, message, self) {
-			if (self)
-				return;
-
 			appendMessage(
 				userstate['username'],
 				userstate['display-name'],
 				userstate['color'],
 				('tmi-sent-ts' in userstate) ? parseInt(userstate['tmi-sent-ts']) : -1,
-				message);
+				message,
+				userstate['emotes'],
+				userstate['subscriber'],
+				userstate['mod']);
 		}
 
-		function appendMessage(username, displayName, color, timestamp, message) {
+		function appendMessage(username, displayName, color, timestamp, message, emotes, isSub, isMod) {
 			var messageElems = $('#messages .message').not('#message-template');
 
 			// If timestamp not given, use current latest timestamp
-			if (timestamp == -1) {
+			if (timestamp == null || timestamp == -1) {
 				if (messageElems.length > 0) {
 					var lastMessageIdData = decodeMessageId(messageElems.last().attr('id'));
 					timestamp = lastMessageIdData.timestamp;
@@ -159,7 +202,22 @@
 			newMessageElem.find('.message-time').text(formatTimestamp(timestamp));
 			newMessageElem.find('.message-user').css('color', color);
 			newMessageElem.find('.message-username').text(displayName);
-			newMessageElem.find('.message-text').text(message);
+
+			// Badges
+			var badgesHtml = "";
+			if (isSub) {
+				badgesHtml += '<span class="badge badge-subscriber">S</span> ';
+			}
+			if (isMod) {
+				badgesHtml += '<span class="badge badge-moderator">M</span> ';
+			}
+
+			newMessageElem.find('.message-badges').html(badgesHtml);
+			
+			// Process message
+			var processedMsg = processMessage(message, emotes);
+			newMessageElem.find('.message-text').html(processedMsg);
+
 			//newMessageElem.find('.message-debug').text("(" + (currentTimeMillis() - timestamp) + "ms)");
 
 			// Insert message where it belongs (based on original timestamp)
@@ -175,24 +233,43 @@
 
 			var messages = $('#messages');
 
-			var scrollBottom = messages.scrollTop() + messages.prop('offsetHeight');
-			var wasScrolledUp = (scrollBottom < messages.prop('scrollHeight') - 10);
-
 			if (insertAfter != null)
 				$(insertAfter).after(newMessageElem);
 			else
 				messages.append(newMessageElem);
 
-			// Scroll to bottom
-			if (!wasScrolledUp) {
+			if (!pauseAutoScroll) {
+				// Scroll to bottom
 				messages.scrollTop(messages.prop('scrollHeight'));
-			}
 
-			// Remove old messages
-			var numMessages = messageElems.length + 1; // + 1 for new message
-			if (numMessages > MAX_MESSAGES) {
-				$('#messages .message').not('#message-template').slice(0, numMessages - MAX_MESSAGES).remove();
+				// Remove old messages
+				var numMessages = messageElems.length + 1; // + 1 for new message
+				if (numMessages > MAX_MESSAGES) {
+					$('#messages .message').not('#message-template').slice(0, numMessages - MAX_MESSAGES).remove();
+				}
 			}
+		}
+
+		/**
+		 * Inserts emotes etc.
+		 */
+		function processMessage(text, emotes) {
+			var splitText = text.split('');
+			for (var i in emotes) {
+				var e = emotes[i];
+				for (var j in e) {
+					var mote = e[j];
+					if (typeof mote == 'string') {
+						mote = mote.split('-');
+						mote = [parseInt(mote[0]), parseInt(mote[1])];
+						var length =  mote[1] - mote[0],
+							empty = Array.apply(null, new Array(length + 1)).map(function() { return '' });
+						splitText = splitText.slice(0, mote[0]).concat(empty).concat(splitText.slice(mote[1] + 1, splitText.length));
+						splitText.splice(mote[0], 1, '<span class="emoticon-wrapper"><img class="emoticon" src="http://static-cdn.jtvnw.net/emoticons/v1/' + i + '/1.0" /></span>');
+					}
+				}
+			}
+			return splitText.join('');
 		}
 
 		/**
@@ -203,12 +280,12 @@
 			client.say(CHANNEL, message);
 
 			// Immediately show message
-			appendMessage(
+			/*appendMessage(
 				USERNAME,
 				client.globaluserstate['display-name'],
 				client.globaluserstate['color'],
 				-1,
-				message);
+				message);*/
 
 			// Reset input
 			$('#input-message').val("");
@@ -231,6 +308,29 @@
 			}
 		}
 
+		/**
+		 * Handles scrolling inside the chat (messages) window
+		 */
+		function onChatWindowMouseWheel(e) {
+			var messages = $('#messages');
+			var scrollBottom = messages.scrollTop() + messages.prop('offsetHeight');
+			pauseAutoScroll = (scrollBottom < messages.prop('scrollHeight') - 50);
+		}
+
+
+
+
+		// -------------------------------------------------------------------------------------
+		
+		$(document).ready(function() {
+			
+			$('#messages').bind('wheel', onChatWindowMouseWheel);
+		
+		});
+
+		// -------------------------------------------------------------------------------------
+
+
 
 		function encodeMessageId(username, timestamp) {
 			return username + ":" + timestamp;
@@ -245,6 +345,27 @@
 		}
 
 
+		function apiGet(path, callbackFn) {
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", "https://api.twitch.tv/kraken" + path, true);
+			xhr.setRequestHeader('Accept', 'application/vnd.twitchtv.v5+json');
+			xhr.setRequestHeader('Client-ID', CLIENT_ID);
+			xhr.responseType = "json";
+			xhr.addEventListener("load", function(ev) {
+				if (xhr.readyState == 4) {
+					if (xhr.status != 200) {
+						callbackFn(xhr.status, null, null);
+					} else {
+						callbackFn(null, null, xhr.response);
+					}
+				}
+			});
+			xhr.send();
+		}
+
+
+		// -------------------------------------------------------------------------------------
+
 		function currentTimeMillis() {
 			return +new Date();
 		}
@@ -253,8 +374,8 @@
 			var date = new Date(millis);
 			return date.getHours()
 				+ ":" + padZeros(date.getMinutes(), 2)
-				+ ":" + padZeros(date.getSeconds(), 2)
-				+ "." + padZeros(date.getMilliseconds(), 2);
+				/*+ ":" + padZeros(date.getSeconds(), 2)
+				+ "." + padZeros(date.getMilliseconds(), 2)*/;
 		}
 
 		function padZeros(num, size) {

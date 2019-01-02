@@ -1,4 +1,6 @@
 function Controller(clientId, config) {
+	var _this = this;
+	
 	var channel = config.get('channel', '').trim();
 	if (channel.length == 0) {
 		console.error("Invalid channel configured: " + channel);
@@ -11,9 +13,42 @@ function Controller(clientId, config) {
 	/** Interface to any view, instance of {@link ViewInterface} */
 	var view = null;
 
+	/** Set of emotes the chatting user can use */
+	this.emotesets = {};
 
-	var makeUserInfo = function(userstate) {
+
+	var apiGet = function(path, callbackFn) {
+		var xhr = new XMLHttpRequest();
+		xhr.open("GET", "https://api.twitch.tv/kraken" + path, true);
+		xhr.setRequestHeader('Accept', 'application/vnd.twitchtv.v5+json');
+		xhr.setRequestHeader('Client-ID', CLIENT_ID);
+		xhr.responseType = "json";
+		xhr.addEventListener("load", function(ev) {
+			if (xhr.readyState == 4) {
+				if (xhr.status != 200) {
+					callbackFn(xhr.status, null);
+				} else {
+					callbackFn(null, xhr.response);
+				}
+			}
+		});
+		xhr.send();
+	}
+
+	var updateEmoteSetsPeriodically = function() {
+		var emotesets = client.emotes;
+		apiGet("/chat/emoticon_images?emotesets=" + emotesets, function(status, response) {
+			if (response != null)
+				_this.emotesets = response['emoticon_sets'];
+			
+			// Schedule next update
+			window.setTimeout(updateEmoteSetsPeriodically, 60000);
+		});
+	}
+
+	var makeUserInfo = function(userstate, self) {
 		return {
+			isSelf: self,
 			username: userstate['username'],
 			displayName: userstate['display-name'],
 			color: userstate['color'],
@@ -28,8 +63,9 @@ function Controller(clientId, config) {
 	 */
 	this.onMessage = function(channel, userstate, message, self) {
 		var timestamp = ('tmi-sent-ts' in userstate) ? parseInt(userstate['tmi-sent-ts']) : -1;
-		var user = makeUserInfo(userstate);
+		var user = makeUserInfo(userstate, self);
 
+		console.debug(userstate);
 		switch (userstate['message-type']) {
 			case 'chat':
 				view.appendChatMessage(timestamp, user, message, userstate['emotes']);
@@ -44,6 +80,13 @@ function Controller(clientId, config) {
 	 */
 	this.sendChatMessage = function(message) {
 		client.say(channel, message);
+	}
+
+	/**
+	 * Joined a channel
+	 */
+	this.onJoin = function(channel, username, self) {
+		updateEmoteSetsPeriodically();
 	}
 
 	/**
@@ -69,6 +112,7 @@ function Controller(clientId, config) {
 
 		client.connect();
 		client.on("message", this.onMessage);
+		client.on("join", this.onJoin);
 
 		return true;
 	}
@@ -78,6 +122,10 @@ function Controller(clientId, config) {
 	 */
 	this.registerView = function(view_) {
 		view = view_;
+	}
+
+	this._getClient = function() {
+		return client;
 	}
 }
 

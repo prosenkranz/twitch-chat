@@ -18,10 +18,8 @@ function View(controller, config) {
 		return {username: parts[0], timestamp: parts[1]}
 	}
 
-	/**
-	 * Replaces emote codes with images
-	 */
-	var injectEmotes = function(text, emotes) {
+	var injectOfficialEmotes = function(text, emotes) {
+		// Twitch sends us positions of emotes, based on characters
 		var splitText = text.split('');
 		for (var i in emotes) {
 			var e = emotes[i];
@@ -39,6 +37,38 @@ function View(controller, config) {
 			}
 		}
 		return splitText.join('');
+	}
+
+	/**
+	 * @param emotesets should be in the form of {<emote-set>: [ {code: <emote-code>, id: <emote-id>}, ... ], ...}
+	 */
+	var injectOfficialEmotesFromEmotesets = function(text, emotesets) {
+		console.debug(emotesets);
+		var words = text.split(/\s+/);
+		words.forEach(function(word, i) {
+			// Find word in emote codes
+			for (var j in emotesets) {
+				for (var k in emotesets[j]) {
+					var emote = emotesets[j][k];
+					if (word == emote.code) {
+						words[i] = '<span class="emoticon-wrapper">'
+							+ '<img class="emoticon" src="http://static-cdn.jtvnw.net/emoticons/v1/' + emote.id + '/1.0"></span>';
+						return;
+					}
+				}
+			}
+		});
+		return words.join(' ');
+	}
+
+	var injectBTTVEmotes = function(text) {
+		// TODO
+		return text;
+	}
+
+	var injectFFZEmotes = function(text) {
+		// TODO
+		return text;
 	}
 
 	/**
@@ -77,7 +107,13 @@ function View(controller, config) {
 		newMessageElem.find('.message-badges').html(badgesHtml);
 		
 		// Process message
-		var msgWithEmotes = injectEmotes(message, emotes);
+		var msgWithEmotes = user.isSelf
+			? injectOfficialEmotesFromEmotesets(message, controller.emotesets)
+			: injectOfficialEmotes(message, emotes);
+
+		msgWithEmotes = injectBTTVEmotes(msgWithEmotes);
+		msgWithEmotes = injectFFZEmotes(msgWithEmotes);
+
 		newMessageElem.find('.message-text').html(msgWithEmotes);
 
 		//newMessageElem.find('.message-debug').text("(" + (currentTimeMillis() - timestamp) + "ms)");

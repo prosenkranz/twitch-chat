@@ -1,0 +1,98 @@
+html *, * {
+	box-sizing: border-box;
+}
+body {
+	background: #000;
+	margin: 0;
+	font-family: Arial;
+	font-size: 12.5px;
+}
+main {
+	background: #222;
+	position: absolute;
+	height: 100%;
+	width: 100%;
+	max-width: 400px;
+	overflow: hidden;
+	padding-bottom: 50px;
+}
+#messages {
+	position: relative;
+	height: 100%;
+	padding: 10px;
+	color: #eee;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+#messages .message {
+	padding: 3px;
+	min-height: 25px;
+	line-height: 20px;
+}
+#messages #message-template {
+	display: none;
+}
+#messages .message-time {
+	color: #666;
+}
+#messages .badge {
+	display: inline-block;
+	vertical-align: baseline;
+	width: 15px;
+	height: 15px;
+	line-height: 15px;
+	font-size: 11px;
+	text-align: center;
+	background-color: #bbb;
+	color: #fff;
+	border: 1px solid #fff;
+	font-weight: bold;
+}
+#messages .badge-subscriber {
+	background-color: #05b;
+}
+#messages .badge-moderator {
+	background-color: rgb(0, 122, 0);
+}
+#messages .badge-admin {
+	background-color: #f33;
+}
+#messages .message-user {
+	font-weight: bold;
+	color: #7af;
+}
+#messages .message-debug {
+	font-size: 11px;
+	color: #aaa;
+}
+#messages .message-text .emoticon-wrapper {
+	display: inline-block;
+}
+#messages .message-text .emoticon {
+	max-height: 28px;
+	margin-bottom: -0.25em;
+}
+#input {
+	position: absolute;
+	bottom: 0px;
+	width: 100%;
+	height: 50px;
+	border-top: 1px solid #333;
+	padding: 10px;
+	font-size: 0px;
+}
+#input #input-message {
+	display: inline-block;
+	width: 95%;
+	height: 100%;
+	font-size: 12px;
+	background: #2f2f2f;
+	color: #eee;
+}
+#input #input-submit {
+	display: inline-block;
+	vertical-align: top;
+	width: 5%;
+	height: 100%;
+	font-size: 12px;
+}

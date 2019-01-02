@@ -2,110 +2,19 @@
 <html>
 <head>
 	<title>Twitch Chat</title>	
+	
+	<link rel="stylesheet" href="style.css" />
+
 	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 	<script src="https://cdn.rawgit.com/tmijs/cdn/1c25be29/1.2.1/tmi.js"></script>
+	
+	<script src="Util.js"></script>
+	<script src="Configuration.js"></script>
+	<script src="Controller.js"></script>
+	<script src="View.js"></script>
+
 	<script src="config.default.js"></script>
 	<script src="config.local.js"></script>
-	<style type="text/css">
-		html *, * {
-			box-sizing: border-box;
-		}
-		body {
-			background: #000;
-			margin: 0;
-			font-family: Arial;
-			font-size: 12.5px;
-		}
-		main {
-			background: #222;
-			position: absolute;
-			height: 100%;
-			width: 100%;
-			max-width: 400px;
-			overflow: hidden;
-			padding-bottom: 50px;
-		}
-		#messages {
-			position: relative;
-			height: 100%;
-			padding: 10px;
-			color: #eee;
-			overflow-x: hidden;
-			overflow-y: scroll;
-		}
-		#messages .message {
-			padding: 3px;
-			min-height: 25px;
-			line-height: 20px;
-		}
-		#messages #message-template {
-			display: none;
-		}
-		#messages .message-time {
-			color: #666;
-		}
-		#messages .badge {
-			display: inline-block;
-			vertical-align: baseline;
-			width: 15px;
-			height: 15px;
-			line-height: 15px;
-			font-size: 11px;
-			text-align: center;
-			background-color: #bbb;
-			color: #fff;
-			border: 1px solid #fff;
-			font-weight: bold;
-		}
-		#messages .badge-subscriber {
-			background-color: #05b;
-		}
-		#messages .badge-moderator {
-			background-color: rgb(0, 122, 0);
-		}
-		#messages .badge-admin {
-			background-color: #f33;
-		}
-		#messages .message-user {
-			font-weight: bold;
-			color: #7af;
-		}
-		#messages .message-debug {
-			font-size: 11px;
-			color: #aaa;
-		}
-		#messages .message-text .emoticon-wrapper {
-			display: inline-block;
-		}
-		#messages .message-text .emoticon {
-			max-height: 28px;
-			margin-bottom: -0.25em;
-		}
-		#input {
-			position: absolute;
-			bottom: 0px;
-			width: 100%;
-			height: 50px;
-			border-top: 1px solid #333;
-			padding: 10px;
-			font-size: 0px;
-		}
-		#input #input-message {
-			display: inline-block;
-			width: 95%;
-			height: 100%;
-			font-size: 12px;
-			background: #2f2f2f;
-			color: #eee;
-		}
-		#input #input-submit {
-			display: inline-block;
-			vertical-align: top;
-			width: 5%;
-			height: 100%;
-			font-size: 12px;
-		}
-	</style>
 </head>
 <body>
 	<main>
@@ -121,230 +30,26 @@
 			</div>
 		</div>
 		<div id="input">
-			<textarea id="input-message" onkeypress="onInputFieldKeyPress(event);"></textarea>
-			<input type="submit" id="input-submit" value="Send" onclick="onSendButtonClick();" />
+			<textarea id="input-message"></textarea>
+			<input type="submit" id="input-submit" value="Send" />
 		</div>
 	</main>
 
 	<script type="text/javascript">
-		var CLIENT_ID = "ccxk8gzqpe0qd8t5lmwf45t1kplfi1";
-
-		// -------------------------------------------------------------------------------------
-
-		var pauseAutoScroll = false;
 		
-		// -------------------------------------------------------------------------------------
+		var CLIENT_ID = "ccxk8gzqpe0qd8t5lmwf45t1kplfi1";
+		var controller = new Controller(CLIENT_ID, config);
+		var view = new View(controller, config);
 
-		// Start client
-		var client = new tmi.client({
-			options: {
-				clientId: CLIENT_ID,
-				debug: false
-			},
-			connection: {
-				reconnect: true,
-			},
-			identity: {
-				username: USERNAME,
-				password: "oauth:" + OAUTH_TOKEN,
-			},
-			channels: ['#' + CHANNEL],
-		});
-
-		client.connect();
-
-		// -------------------------------------------------------------------------------------
-
-		/**
-		 * Message from server handler
-		 */
-		client.on("message", function(channel, userstate, message, self) {
-			switch (userstate['message-type']) {
-				case 'chat':
-					onChatMessage(channel, userstate, message, self);
-					break;
-				default:
-					break;
-			}
-		});
-
-		/**
-		 * A standard message (someone typed in chat)
-		 */
-		function onChatMessage(channel, userstate, message, self) {
-			appendMessage(
-				userstate['username'],
-				userstate['display-name'],
-				userstate['color'],
-				('tmi-sent-ts' in userstate) ? parseInt(userstate['tmi-sent-ts']) : -1,
-				message,
-				userstate['emotes'],
-				userstate['subscriber'],
-				userstate['mod']);
-		}
-
-		function appendMessage(username, displayName, color, timestamp, message, emotes, isSub, isMod) {
-			var messageElems = $('#messages .message').not('#message-template');
-
-			// If timestamp not given, use current latest timestamp
-			if (timestamp == null || timestamp == -1) {
-				if (messageElems.length > 0) {
-					var lastMessageIdData = decodeMessageId(messageElems.last().attr('id'));
-					timestamp = lastMessageIdData.timestamp;
-				}
-				else {
-					// No messages yet. First message will get timestamp 0
-					timestamp = 0;
-				}
-			}
-			
-			var newMessageElem = $('#message-template').clone();
-			newMessageElem.attr('id', encodeMessageId(username, timestamp));
-			newMessageElem.find('.message-time').text(formatTimestamp(timestamp));
-			newMessageElem.find('.message-user').css('color', color);
-			newMessageElem.find('.message-username').text(displayName);
-
-			// Badges
-			var badgesHtml = "";
-			if (isSub) {
-				badgesHtml += '<span class="badge badge-subscriber">S</span> ';
-			}
-			if (isMod) {
-				badgesHtml += '<span class="badge badge-moderator">M</span> ';
-			}
-
-			newMessageElem.find('.message-badges').html(badgesHtml);
-			
-			// Process message
-			var processedMsg = processMessage(message, emotes);
-			newMessageElem.find('.message-text').html(processedMsg);
-
-			//newMessageElem.find('.message-debug').text("(" + (currentTimeMillis() - timestamp) + "ms)");
-
-			// Insert message where it belongs (based on original timestamp)
-			// Since they're already sorted, we can traverse them in DOM order
-			var insertAfter = null;
-			for (var i = 0; i < messageElems.length; ++i) {
-				var messageIdData = decodeMessageId(messageElems[i].id);
-				if (insertAfter == null || timestamp >= messageIdData.timestamp)
-					insertAfter = messageElems[i];
-				else if (timestamp < messageIdData.timestamp)
-					break;
-			}
-
-			var messages = $('#messages');
-
-			if (insertAfter != null)
-				$(insertAfter).after(newMessageElem);
-			else
-				messages.append(newMessageElem);
-
-			if (!pauseAutoScroll) {
-				// Scroll to bottom
-				messages.scrollTop(messages.prop('scrollHeight'));
-
-				// Remove old messages
-				var numMessages = messageElems.length + 1; // + 1 for new message
-				if (numMessages > MAX_MESSAGES) {
-					$('#messages .message').not('#message-template').slice(0, numMessages - MAX_MESSAGES).remove();
-				}
-			}
-		}
-
-		/**
-		 * Inserts emotes etc.
-		 */
-		function processMessage(text, emotes) {
-			var splitText = text.split('');
-			for (var i in emotes) {
-				var e = emotes[i];
-				for (var j in e) {
-					var mote = e[j];
-					if (typeof mote == 'string') {
-						mote = mote.split('-');
-						mote = [parseInt(mote[0]), parseInt(mote[1])];
-						var length =  mote[1] - mote[0],
-							empty = Array.apply(null, new Array(length + 1)).map(function() { return '' });
-						splitText = splitText.slice(0, mote[0]).concat(empty).concat(splitText.slice(mote[1] + 1, splitText.length));
-						splitText.splice(mote[0], 1, '<span class="emoticon-wrapper"><img class="emoticon" src="http://static-cdn.jtvnw.net/emoticons/v1/' + i + '/1.0" /></span>');
-					}
-				}
-			}
-			return splitText.join('');
-		}
-
-		/**
-		 * Send current message to channel
-		 */
-		function sendCurrentMessage() {
-			var message = $('#input-message').val();
-			client.say(CHANNEL, message);
-
-			// Immediately show message
-			/*appendMessage(
-				USERNAME,
-				client.globaluserstate['display-name'],
-				client.globaluserstate['color'],
-				-1,
-				message);*/
-
-			// Reset input
-			$('#input-message').val("");
-		}
-
-		/**
-		 * Send button click handler
-		 */
-		function onSendButtonClick() {
-			sendCurrentMessage();
-		}
-
-		/**
-		 * Input field KeyPress handler
-		 */
-		function onInputFieldKeyPress(event) {
-			if (event.keyCode == 13) {
-				sendCurrentMessage();
-				event.preventDefault();
-			}
-		}
-
-		/**
-		 * Handles scrolling inside the chat (messages) window
-		 */
-		function onChatWindowMouseWheel(e) {
-			var messages = $('#messages');
-			var scrollBottom = messages.scrollTop() + messages.prop('offsetHeight');
-			pauseAutoScroll = (scrollBottom < messages.prop('scrollHeight') - 50);
-		}
-
-
-
+		controller.connect();
 
 		// -------------------------------------------------------------------------------------
 		
 		$(document).ready(function() {
-			
-			$('#messages').bind('wheel', onChatWindowMouseWheel);
-		
+			view.onDocumentReady();
 		});
 
 		// -------------------------------------------------------------------------------------
-
-
-
-		function encodeMessageId(username, timestamp) {
-			return username + ":" + timestamp;
-		}
-
-		function decodeMessageId(messageId) {
-			var parts = messageId.split(":");
-			return {
-				username: parts[0],
-				timestamp: parts[1]
-			}
-		}
-
 
 		function apiGet(path, callbackFn) {
 			var xhr = new XMLHttpRequest();
@@ -364,26 +69,6 @@
 			xhr.send();
 		}
 
-
-		// -------------------------------------------------------------------------------------
-
-		function currentTimeMillis() {
-			return +new Date();
-		}
-
-		function formatTimestamp(millis) {
-			var date = new Date(millis);
-			return date.getHours()
-				+ ":" + padZeros(date.getMinutes(), 2)
-				/*+ ":" + padZeros(date.getSeconds(), 2)
-				+ "." + padZeros(date.getMilliseconds(), 2)*/;
-		}
-
-		function padZeros(num, size) {
-			var s = num+"";
-			while (s.length < size) s = "0" + s;
-			return s;
-		}
 	</script>
 </body>
 </html>

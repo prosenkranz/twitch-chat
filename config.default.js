@@ -1,4 +1,10 @@
-var CHANNEL = "<replace>";
-var USERNAME = "<replace>";
-var OAUTH_TOKEN = "<replace>";
-var MAX_MESSAGES = 100;
+var config = new Configuration();
+
+/** The channel to join */
+config.set("channel", "");
+
+/** Twitch credentials */
+config.set("username", "").set("oauth_token", "");
+
+/** Max messages to display */
+config.set("max_messages", 100);

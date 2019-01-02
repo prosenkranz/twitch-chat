@@ -204,10 +204,6 @@ function View(controller, config) {
 			}
 		});
 
-		$('#input-submit').click(function() {
-			view.sendCurrentMessage();
-		});
-
 		$('#messages').bind('wheel', function(event) {
 			var messages = $('#messages');
 			var scrollBottom = messages.scrollTop() + messages.prop('offsetHeight');

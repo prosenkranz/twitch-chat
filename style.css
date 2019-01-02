@@ -14,7 +14,7 @@ main {
 	width: 100%;
 	max-width: 400px;
 	overflow: hidden;
-	padding-bottom: 50px;
+	padding-bottom: 60px;
 }
 #messages {
 	position: relative;
@@ -63,23 +63,16 @@ main {
 	position: absolute;
 	bottom: 0px;
 	width: 100%;
-	height: 50px;
+	height: 60px;
 	border-top: 1px solid #333;
 	padding: 10px;
 	font-size: 0px;
 }
 #input #input-message {
 	display: inline-block;
-	width: 95%;
+	width: 100%;
 	height: 100%;
 	font-size: 12px;
 	background: #2f2f2f;
 	color: #eee;
-}
-#input #input-submit {
-	display: inline-block;
-	vertical-align: top;
-	width: 5%;
-	height: 100%;
-	font-size: 12px;
 }

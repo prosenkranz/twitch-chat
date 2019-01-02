@@ -109,7 +109,7 @@ function Controller(clientId, config) {
 		var timestamp = ('tmi-sent-ts' in userstate) ? parseInt(userstate['tmi-sent-ts']) : -1;
 		var user = makeUserInfo(userstate, self);
 
-		console.debug(userstate);
+		//console.debug(userstate);
 		switch (userstate['message-type']) {
 			case 'chat':
 				view.appendChatMessage(timestamp, user, message, userstate['emotes']);

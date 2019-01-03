@@ -216,6 +216,13 @@ function Controller(clientId, config) {
 	}
 
 	/**
+	 * A user subscribed to the channel
+	 */
+	this.onSubscription = function(channel, username, method, message, userstate) {
+		view.appendSubscriptionMessage(username, message, method);
+	}
+
+	/**
 	 * Joined a channel
 	 */
 	var joinedChannel = false;
@@ -262,6 +269,7 @@ function Controller(clientId, config) {
 		client.on("join", this.onJoin);
 		client.on("roomstate", this.onRoomState);
 		client.on("timeout", this.onUserTimeout);
+		client.on("subscription", this.onSubscription);
 
 		return true;
 	}
@@ -292,6 +300,9 @@ function ViewInterface() {
 
 	/** A specially formatted system message */
 	this.appendSystemMessage = function(message) {};
+
+	/** Show that someone subscribed to the channel */
+	this.appendSubscriptionMessage = function(username, message, method) {};
 
 	/** Hide the messages of a user (e.g. because of a timeout or ban) */
 	this.hideMessagesOfUser = function(username) {};

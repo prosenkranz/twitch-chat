@@ -84,7 +84,7 @@ function View(controller, config) {
 	}
 
 	var injectHyperlinks = function(text) {
-		return text.replace(/(https?:\/\/[-a-zA-Z0-9@:%._\+~#=\/\?&]+)/, '<a href="$1">$1</a>');
+		return text.replace(/(https?:\/\/[-a-zA-Z0-9@:%._\+~#=\/\?&]+)/, '<a href="$1" target="_blank">$1</a>');
 	}
 
 	/**
@@ -121,6 +121,24 @@ function View(controller, config) {
 
 	var getUserMessageElements = function() {
 		return $('#messages .message').not('.debug-message').not('#message-template');
+	}
+
+	/**
+	 * Injects emotes, hyperlinks, etc.
+	 */
+	var processMessage = function(message, user, emotes) {
+		// Hyperlinks
+		message = injectHyperlinks(message);
+
+		// Emotes
+		message = (user && user.isSelf)
+			? injectOfficialEmotesFromEmotesets(message, controller.emotesets)
+			: injectOfficialEmotes(message, emotes);
+
+		message = injectBTTVEmotes(message, controller.bttvEmotes, controller.bttvEmoteURLTemplate);
+		message = injectFFZEmotes(message);
+
+		return message;
 	}
 
 	/**
@@ -165,19 +183,8 @@ function View(controller, config) {
 		var badgesHtml = createBadgesHTML(user, controller.badges);
 		newMessageElem.find('.message-badges').html(badgesHtml);
 		
-		var finalMsg = message;
-		
-		// Hyperlinks
-		finalMsg = injectHyperlinks(finalMsg);
-
-		// Emotes
-		finalMsg = user.isSelf
-			? injectOfficialEmotesFromEmotesets(finalMsg, controller.emotesets)
-			: injectOfficialEmotes(finalMsg, emotes);
-
-		finalMsg = injectBTTVEmotes(finalMsg, controller.bttvEmotes, controller.bttvEmoteURLTemplate);
-		finalMsg = injectFFZEmotes(finalMsg);
-
+		// Inject emotes, etc.
+		var finalMsg = processMessage(message, user, emotes);
 		newMessageElem.find('.message-text').html(finalMsg);
 
 		//newMessageElem.find('.message-debug').text("(" + (currentTimeMillis() - timestamp) + "ms)");
@@ -229,6 +236,25 @@ function View(controller, config) {
 		newMessageElem.find('.message-text').html(message);
 		$('#messages').append(newMessageElem);
 	};
+
+	this.appendSubscriptionMessage = function(username, message, method) {
+		var newMessageElem = $('#message-template').clone();
+		newMessageElem.attr('id', encodeMessageId("system", currentTimeMillis()));
+		newMessageElem.addClass('system-message');
+		newMessageElem.addClass('subscription-message');
+		newMessageElem.find('.message-user').remove();
+		
+		var html = username + " just (re-)subscribed";
+		if (method.prime)
+			html += " with Twitch Prime";
+
+		if (message && message.length > 0)
+			html += ": " + processMessage(message);
+
+		newMessageElem.find('.message-text').html(html);
+
+		$('#messages').append(newMessageElem);
+	}
 
 	this.hideMessagesOfUser = function(username) {
 		var messageElems = getUserMessageElements();

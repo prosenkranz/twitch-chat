@@ -51,8 +51,18 @@ main {
 	color: #888;
 	font-size: 11.5px;
 }
+#messages .message.subscription-message {
+	color: #fff;
+	font-weight: bold;
+	background-color: #394248;
+	border-left: 5px solid #fff;
+	border-right: 5px solid #fff;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
 #messages .message.hidden-message {
 	color: #777;
+	opacity: 0.5;
 	text-decoration: line-through;
 }
 #messages #message-template {

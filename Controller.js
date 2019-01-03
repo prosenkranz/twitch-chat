@@ -13,7 +13,7 @@ function Controller(clientId, config) {
 	/** Interface to any view, instance of {@link ViewInterface} */
 	var view = null;
 
-	/** Set of emotes the chatting user can use */
+	/** Set of emotes the chatting user can use: {<emote-set>: [ {code: <emote-code>, id: <emote-id>}, ... ], ...} */
 	this.emotesets = {};
 
 	/** BTTV Emotes: { <code>: {...}, ... } */
@@ -23,6 +23,9 @@ function Controller(clientId, config) {
 	this.badges = {};
 
 	this.channelId = null;
+
+	/** List of emote codes, the current user can use. Sorted by code */
+	this.usableEmotes = [];
 
 	/**
 	 * Sends an ajax GET requests accepting JSON. The callbackFn is called for success AND errors
@@ -71,8 +74,10 @@ function Controller(clientId, config) {
 	var updateEmoteSetsPeriodically = function() {
 		var emotesets = client.emotes;
 		apiGet("/chat/emoticon_images?emotesets=" + emotesets, function(status, response) {
-			if (response != null)
+			if (response != null) {
 				_this.emotesets = response['emoticon_sets'];
+				updateUsableEmotes();
+			}
 			
 			// Schedule next update
 			window.setTimeout(updateEmoteSetsPeriodically, 60000);
@@ -86,10 +91,30 @@ function Controller(clientId, config) {
 				response['emotes'].forEach(function(emote, i) {
 					_this.bttvEmotes[emote['code']] = emote;
 				});
+				updateUsableEmotes();
 			}
 
 			window.setTimeout(updateBTTVEmotesPeriodically, 60000);
 		});
+	}
+
+	var updateUsableEmotes = function() {
+		var usableEmotes = [];
+		
+		// Add official emotes
+		for (var emoteSet in _this.emotesets) {
+			for (var i in _this.emotesets[emoteSet]) {
+				usableEmotes.push(_this.emotesets[emoteSet][i].code);
+			}
+		}
+
+		// Add bttv emotes
+		for (var code in _this.bttvEmotes) {
+			usableEmotes.push(code);
+		}
+
+		// Sort by code
+		_this.usableEmotes = usableEmotes.sort();
 	}
 
 	/**

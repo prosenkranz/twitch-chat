@@ -217,15 +217,60 @@ function View(controller, config) {
 		$('#input-message').val("");
 	}
 
+
+	this.doAutoComplete = function() {
+		var inputBox = $('#input-message');
+		var text = inputBox.val();
+		if (text.length == 0)
+			return;
+
+		var cursorPos = inputBox.getCursorPosition();
+		if (cursorPos == null || cursorPos == 0)
+			return;
+
+		// Get last typed word
+		var lastWhitespace = text.lastIndexOf(" ", cursorPos);
+		var lastTypedWord = text.substr(lastWhitespace + 1, cursorPos);
+		if (lastTypedWord.length == 0)
+			return;
+
+		// Find an emote starting with (and NOT case-sensitively matching) the last typed (partial) word
+		var forceNextEmote = false;
+		for (var i in controller.usableEmotes) {
+			var emote = controller.usableEmotes[i];
+			if (emote.toLowerCase().startsWith(lastTypedWord.toLowerCase()) || forceNextEmote) {
+				if (lastTypedWord == emote) {
+					// Use next emote in list
+					forceNextEmote = true;
+					continue;
+				}
+
+				// Replace last typed word
+				text = text.substr(0, lastWhitespace + 1).concat(emote, text.substr(cursorPos));
+				inputBox.val(text);
+				inputBox.selectRange(lastWhitespace + 1 + emote.length);
+				break;
+			}
+		}
+	}
+
 	
 	/**
 	 * Register Event Listeners
 	 */
 	var view = this;
 	this.onDocumentReady = function() {
-		$('#input-message').keypress(function() {
+		$('#input-message').keydown(function(event) {
+			// Handle TAB
+			if (event.keyCode === 9) {
+				view.doAutoComplete();
+				event.preventDefault();
+			}
+		});
+		
+		$('#input-message').keypress(function(event) {
 			// Handle return key
-			if (event.keyCode == 13) {
+			if (event.keyCode === 13) {
 				view.sendCurrentMessage();
 				event.preventDefault();
 			}

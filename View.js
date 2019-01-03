@@ -245,7 +245,7 @@ function View(controller, config) {
 
 		var autoCompletions = (lastTypedWord[0] == '@'
 				? controller.recentChatters.map(function(x) { return "@" + x; })
-				: controller.usableEmotes);
+				: controller.usableEmotes.concat(controller.recentChatters));
 
 		// Find a replacement starting with (and NOT case-sensitively matching) the last typed (partial) word
 		var forceNext = false;

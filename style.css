@@ -41,8 +41,13 @@ main {
 #messages .message.mention {
 	background-color: #411;
 }
-#messages .message.debug-message {
-	color: #bbb;
+#messages .message.system-message {
+	color: #888;
+	font-size: 11.5px;
+}
+#messages .message.hidden-message {
+	color: #777;
+	text-decoration: line-through;
 }
 #messages #message-template {
 	display: none;

@@ -207,6 +207,15 @@ function Controller(clientId, config) {
 	}
 
 	/**
+	 * A user has been timed out on the channel
+	 */
+	this.onUserTimeout = function(channel, username, reason, duration) {
+		var reasonSuffix = (reason != null && reason.length > 0 ? ": " + reason : "");
+		view.hideMessagesOfUser(username);
+		view.appendSystemMessage("User " + username + " has been timed out for " + duration + "s" + reasonSuffix);
+	}
+
+	/**
 	 * Joined a channel
 	 */
 	var joinedChannel = false;
@@ -252,6 +261,7 @@ function Controller(clientId, config) {
 		client.on("message", this.onMessage);
 		client.on("join", this.onJoin);
 		client.on("roomstate", this.onRoomState);
+		client.on("timeout", this.onUserTimeout);
 
 		return true;
 	}
@@ -269,20 +279,20 @@ function Controller(clientId, config) {
 }
 
 function ViewInterface() {
-	/**
-	 * A regular chat message (i.e. someone typed in chat)
-	 */
+	/** A regular chat message (i.e. someone typed in chat) */
 	this.appendChatMessage = function(timestamp, user, message, emotes) {};
 
-	/**
-	 * An action message (/me ...)
-	 */
+	/** An action message (/me ...) */
 	this.appendActionMessage = function(timestamp, user, message, emotes) {};
 
-	/**
-	 * A simple debug message
-	 */
+	/** A simple debug message */
 	this.appendDebugMessage = function(message) {
 		console.debug(message);
 	};
+
+	/** A specially formatted system message */
+	this.appendSystemMessage = function(message) {};
+
+	/** Hide the messages of a user (e.g. because of a timeout or ban) */
+	this.hideMessagesOfUser = function(username) {};
 }

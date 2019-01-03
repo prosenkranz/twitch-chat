@@ -119,11 +119,15 @@ function View(controller, config) {
 		return html;
 	}
 
+	var getUserMessageElements = function() {
+		return $('#messages .message').not('.debug-message').not('#message-template');
+	}
+
 	/**
 	 * Adds a new message to the output
 	 */
 	this.appendChatMessage = function(timestamp, user, message, emotes, isAction) {
-		var messageElems = $('#messages .message').not('.debug-message').not('#message-template');
+		var messageElems = getUserMessageElements();
 
 		// If timestamp not given, use current latest timestamp
 		if (timestamp == null || timestamp == -1) {
@@ -210,13 +214,31 @@ function View(controller, config) {
 	};
 
 	this.appendDebugMessage = function(message) {
+		this.appendSystemMessage(message);
+	}
+
+	this.appendSystemMessage = function(message) {
 		var newMessageElem = $('#message-template').clone();
-		newMessageElem.attr('id', '');
-		newMessageElem.addClass('debug-message');
+		newMessageElem.attr('id', encodeMessageId("system", currentTimeMillis()));
+		newMessageElem.addClass('system-message');
 		newMessageElem.find('.message-user').remove();
 		newMessageElem.find('.message-text').html(message);
 		$('#messages').append(newMessageElem);
-	}
+	};
+
+	this.hideMessagesOfUser = function(username) {
+		var messageElems = getUserMessageElements();
+		messageElems.each(function(i, elem) {
+			elem = $(elem);
+			var data = decodeMessageId(elem.attr('id'));
+			if (data.username == username) {
+				if (config.get('remove_deleted_messages', false))
+					elem.remove();
+				else
+					elem.addClass("hidden-message");
+			}
+		});
+	};
 
 	this.sendCurrentMessage = function() {
 		var message = $('#input-message').val();

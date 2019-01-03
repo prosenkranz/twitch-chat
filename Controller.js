@@ -171,14 +171,15 @@ function Controller(clientId, config) {
 		var user = makeUserInfo(userstate, self);
 
 		// (Re-)add user to recently seen chatters list
+		var recentChatterName = (user.displayName || user.username);
 		for (var i = 0; i < _this.recentChatters.length; ++i) {
-			if (_this.recentChatters[i] == user.username) {
+			if (_this.recentChatters[i] == recentChatterName) {
 				_this.recentChatters.splice(i, 1);
 				break;
 			}
 		}
 
-		_this.recentChatters.push(user.username);
+		_this.recentChatters.push(recentChatterName);
 
 		// Limit recent chatters list to a certain length
 		while (_this.recentChatters.length > 250) {

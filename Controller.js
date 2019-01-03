@@ -27,6 +27,9 @@ function Controller(clientId, config) {
 	/** List of emote codes, the current user can use. Sorted by code */
 	this.usableEmotes = [];
 
+	/** bounded list of recently seen chatters - for autocomplete. Sorted by time seen */
+	this.recentChatters = [];
+
 	/**
 	 * Sends an ajax GET requests accepting JSON. The callbackFn is called for success AND errors
 	 * @param callbackFn a function(statusCode, responseBody)
@@ -166,6 +169,21 @@ function Controller(clientId, config) {
 	this.onMessage = function(channel, userstate, message, self) {
 		var timestamp = ('tmi-sent-ts' in userstate) ? parseInt(userstate['tmi-sent-ts']) : -1;
 		var user = makeUserInfo(userstate, self);
+
+		// (Re-)add user to recently seen chatters list
+		for (var i = 0; i < _this.recentChatters.length; ++i) {
+			if (_this.recentChatters[i] == user.username) {
+				_this.recentChatters.splice(i, 1);
+				break;
+			}
+		}
+
+		_this.recentChatters.push(user.username);
+
+		// Limit recent chatters list to a certain length
+		while (_this.recentChatters.length > 250) {
+			_this.recentChatters.shift();
+		}
 
 		//console.debug(userstate);
 		switch (userstate['message-type']) {

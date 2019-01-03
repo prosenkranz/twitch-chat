@@ -243,21 +243,25 @@ function View(controller, config) {
 		if (lastTypedWord.length == 0)
 			return;
 
-		// Find an emote starting with (and NOT case-sensitively matching) the last typed (partial) word
-		var forceNextEmote = false;
-		for (var i in controller.usableEmotes) {
-			var emote = controller.usableEmotes[i];
-			if (emote.toLowerCase().startsWith(lastTypedWord.toLowerCase()) || forceNextEmote) {
-				if (lastTypedWord == emote) {
-					// Use next emote in list
-					forceNextEmote = true;
+		var autoCompletions = (lastTypedWord[0] == '@'
+				? controller.recentChatters.map(function(x) { return "@" + x; })
+				: controller.usableEmotes);
+
+		// Find a replacement starting with (and NOT case-sensitively matching) the last typed (partial) word
+		var forceNext = false;
+		for (var i in autoCompletions) {
+			var replacement = autoCompletions[i];
+			if (replacement.toLowerCase().startsWith(lastTypedWord.toLowerCase()) || forceNext) {
+				if (lastTypedWord == replacement) {
+					// Use next replacement in list
+					forceNext = true;
 					continue;
 				}
 
 				// Replace last typed word
-				text = text.substr(0, lastWhitespace + 1).concat(emote, text.substr(cursorPos));
+				text = text.substr(0, lastWhitespace + 1).concat(replacement, text.substr(cursorPos));
 				inputBox.val(text);
-				inputBox.selectRange(lastWhitespace + 1 + emote.length);
+				inputBox.selectRange(lastWhitespace + 1 + replacement.length);
 				break;
 			}
 		}

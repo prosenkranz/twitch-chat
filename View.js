@@ -147,6 +147,10 @@ function View(controller, config) {
 		newMessageElem.find('.message-user').css('color', user.color);
 		newMessageElem.find('.message-username').text(user.displayName);
 
+		// Alternating backgrounds
+		if (config.get('alternating_backgrounds', false))
+			newMessageElem.addClass("alternating-bg");
+
 		// Action messages
 		if (isAction) {
 			newMessageElem.find('.message-text').css('color', user.color);

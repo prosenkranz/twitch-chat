@@ -85,6 +85,17 @@ function Controller(clientId, config) {
 	}
 
 	var updateBTTVEmotesPeriodically = function() {
+		// Global emotes
+		ajaxGetJSON("https://api.betterttv.net/2/emotes", function(status, response) {
+			if (response != null) {
+				response['emotes'].forEach(function(emote, i) {
+					_this.bttvEmotes[emote['code']] = emote;
+				});
+				updateUsableEmotes();
+			}
+		});
+		
+		// Channel emotes
 		ajaxGetJSON("https://api.betterttv.net/2/channels/" + config.get('channel'), function(status, response) {
 			if (response != null) {
 				_this.bttvEmoteURLTemplate = response['urlTemplate'];

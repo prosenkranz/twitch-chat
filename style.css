@@ -1,6 +1,15 @@
 html *, * {
 	box-sizing: border-box;
 }
+a,
+a:link,
+a:visited {
+	color: #7af;
+	text-decoration: none;
+}
+a:hover {
+	color: #9cf;
+}
 body {
 	background: #000;
 	margin: 0;

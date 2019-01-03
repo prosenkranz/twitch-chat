@@ -83,6 +83,10 @@ function View(controller, config) {
 		return text;
 	}
 
+	var injectHyperlinks = function(text) {
+		return text.replace(/(https?:\/\/[-a-zA-Z0-9@:%._\+~#=\/\?&]+)/, '<a href="$1">$1</a>');
+	}
+
 	/**
 	 * @param badges should be in the form of
 	 * 	{
@@ -153,15 +157,20 @@ function View(controller, config) {
 		var badgesHtml = createBadgesHTML(user, controller.badges);
 		newMessageElem.find('.message-badges').html(badgesHtml);
 		
-		// Process message
-		var msgWithEmotes = user.isSelf
-			? injectOfficialEmotesFromEmotesets(message, controller.emotesets)
-			: injectOfficialEmotes(message, emotes);
+		var finalMsg = message;
+		
+		// Hyperlinks
+		finalMsg = injectHyperlinks(finalMsg);
 
-		msgWithEmotes = injectBTTVEmotes(msgWithEmotes, controller.bttvEmotes, controller.bttvEmoteURLTemplate);
-		msgWithEmotes = injectFFZEmotes(msgWithEmotes);
+		// Emotes
+		finalMsg = user.isSelf
+			? injectOfficialEmotesFromEmotesets(finalMsg, controller.emotesets)
+			: injectOfficialEmotes(finalMsg, emotes);
 
-		newMessageElem.find('.message-text').html(msgWithEmotes);
+		finalMsg = injectBTTVEmotes(finalMsg, controller.bttvEmotes, controller.bttvEmoteURLTemplate);
+		finalMsg = injectFFZEmotes(finalMsg);
+
+		newMessageElem.find('.message-text').html(finalMsg);
 
 		//newMessageElem.find('.message-debug').text("(" + (currentTimeMillis() - timestamp) + "ms)");
 

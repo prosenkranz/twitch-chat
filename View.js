@@ -60,9 +60,22 @@ function View(controller, config) {
 		return words.join(' ');
 	}
 
-	var injectBTTVEmotes = function(text) {
-		// TODO
-		return text;
+	/**
+	 * @param bttvEmotes should be in the form of { <code>: {id: ..., channel: ..., imageType: ...}, ... }
+	 */
+	var injectBTTVEmotes = function(text, bttvEmotes, bttvEmoteURLTemplate) {
+		var words = text.split(/\s+/);
+		words.forEach(function(word, i) {
+			if (word in bttvEmotes) {
+				var emote = bttvEmotes[word];
+				var url = bttvEmoteURLTemplate
+						.replace("{{id}}", emote.id)
+						.replace("{{image}}", "1x")
+						.replace(/^\/\//, "https://");
+				words[i] = '<span class="emoticon-wrapper"><img class="emoticon" src="' + url + '"></span>';
+			}
+		});
+		return words.join(' ');
 	}
 
 	var injectFFZEmotes = function(text) {
@@ -139,7 +152,7 @@ function View(controller, config) {
 			? injectOfficialEmotesFromEmotesets(message, controller.emotesets)
 			: injectOfficialEmotes(message, emotes);
 
-		msgWithEmotes = injectBTTVEmotes(msgWithEmotes);
+		msgWithEmotes = injectBTTVEmotes(msgWithEmotes, controller.bttvEmotes, controller.bttvEmoteURLTemplate);
 		msgWithEmotes = injectFFZEmotes(msgWithEmotes);
 
 		newMessageElem.find('.message-text').html(msgWithEmotes);

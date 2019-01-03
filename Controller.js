@@ -16,20 +16,27 @@ function Controller(clientId, config) {
 	/** Set of emotes the chatting user can use */
 	this.emotesets = {};
 
+	/** BTTV Emotes: { <code>: {...}, ... } */
+	this.bttvEmotes = {};
+	this.bttvEmoteURLTemplate = null;
+
 	this.badges = {};
 
 	this.channelId = null;
 
-	var apiGet = function(path, callbackFn, authorized) {
+	/**
+	 * Sends an ajax GET requests accepting JSON. The callbackFn is called for success AND errors
+	 * @param callbackFn a function(statusCode, responseBody)
+	 * @param additionalHeaders dict, e.g. { 'Accept': 'application/json', ... }
+	 */
+	var ajaxGetJSON = function(url, callbackFn, additionalHeaders) {
 		var xhr = new XMLHttpRequest();
-		xhr.open("GET", "https://api.twitch.tv/kraken" + path, true);
-		xhr.setRequestHeader('Accept', 'application/vnd.twitchtv.v5+json');
-		if (authorized == true)
-			xhr.setRequestHeader('Authorization', 'OAuth ' + config.get('oauth_token'));
-		xhr.setRequestHeader('Client-ID', clientId);
+		xhr.open("GET", url, true);
+		for (var key in additionalHeaders)
+			xhr.setRequestHeader(key, additionalHeaders[key]);
 		xhr.responseType = "json";
 		xhr.addEventListener("load", function(ev) {
-			if (xhr.readyState == 4) {
+			if (xhr.readyState == 4 && callbackFn) {
 				if (xhr.status != 200) {
 					callbackFn(xhr.status, null);
 				} else {
@@ -39,24 +46,26 @@ function Controller(clientId, config) {
 		});
 		xhr.send();
 	}
+
+	/**
+	 * Start asynchronous call against twitch REST api
+	 */
+	var apiGet = function(path, callbackFn, authorized) {
+		var headers = {
+			'Accept': 'application/vnd.twitchtv.v5+json',
+			'Client-ID': clientId
+		};
+
+		if (authorized)
+			headers['Authorization'] = 'OAuth ' + config.get('oauth_token');
+
+		ajaxGetJSON("https://api.twitch.tv/kraken" + path, callbackFn, headers);
+	}
 	this._apiGet = apiGet;
 
 	// path - e.g. "/badges/global/display?language=en"
 	var badgesApiGet = function(path, callbackFn) {
-		var xhr = new XMLHttpRequest();
-		xhr.open("GET", "https://badges.twitch.tv/v1" + path, true);
-		xhr.setRequestHeader('Accept', 'application/json');
-		xhr.responseType = "json";
-		xhr.addEventListener("load", function(ev) {
-			if (xhr.readyState == 4) {
-				if (xhr.status != 200) {
-					callbackFn(xhr.status, null);
-				} else {
-					callbackFn(null, xhr.response);
-				}
-			}
-		});
-		xhr.send();
+		ajaxGetJSON("https://badges.twitch.tv/v1" + path, callbackFn, { 'Accept': 'application/json' });
 	}
 
 	var updateEmoteSetsPeriodically = function() {
@@ -67,6 +76,19 @@ function Controller(clientId, config) {
 			
 			// Schedule next update
 			window.setTimeout(updateEmoteSetsPeriodically, 60000);
+		});
+	}
+
+	var updateBTTVEmotesPeriodically = function() {
+		ajaxGetJSON("https://api.betterttv.net/2/channels/" + config.get('channel'), function(status, response) {
+			if (response != null) {
+				_this.bttvEmoteURLTemplate = response['urlTemplate'];
+				response['emotes'].forEach(function(emote, i) {
+					_this.bttvEmotes[emote['code']] = emote;
+				});
+			}
+
+			window.setTimeout(updateBTTVEmotesPeriodically, 60000);
 		});
 	}
 
@@ -134,6 +156,7 @@ function Controller(clientId, config) {
 		// This event is called multiple times for some reason...
 		if (!joinedChannel) {
 			updateEmoteSetsPeriodically();
+			updateBTTVEmotesPeriodically();
 			
 			view.appendDebugMessage("Joined channel " + channel);
 			

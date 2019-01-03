@@ -133,6 +133,9 @@ function Controller(clientId, config) {
 
 		//console.debug(userstate);
 		switch (userstate['message-type']) {
+			case 'action':
+				view.appendActionMessage(timestamp, user, message, userstate['emotes']);
+				break;
 			case 'chat':
 				view.appendChatMessage(timestamp, user, message, userstate['emotes']);
 				break;
@@ -215,6 +218,11 @@ function ViewInterface() {
 	 * A regular chat message (i.e. someone typed in chat)
 	 */
 	this.appendChatMessage = function(timestamp, user, message, emotes) {};
+
+	/**
+	 * An action message (/me ...)
+	 */
+	this.appendActionMessage = function(timestamp, user, message, emotes) {};
 
 	/**
 	 * A simple debug message

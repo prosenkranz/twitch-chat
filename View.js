@@ -118,7 +118,7 @@ function View(controller, config) {
 	/**
 	 * Adds a new message to the output
 	 */
-	this.appendChatMessage = function(timestamp, user, message, emotes) {
+	this.appendChatMessage = function(timestamp, user, message, emotes, isAction) {
 		var messageElems = $('#messages .message').not('.debug-message').not('#message-template');
 
 		// If timestamp not given, use current latest timestamp
@@ -138,6 +138,12 @@ function View(controller, config) {
 		newMessageElem.find('.message-time').text(formatTimestamp(timestamp));
 		newMessageElem.find('.message-user').css('color', user.color);
 		newMessageElem.find('.message-username').text(user.displayName);
+
+		// Action messages
+		if (isAction) {
+			newMessageElem.find('.message-text').css('color', user.color);
+			newMessageElem.find('.message-user-colon').remove();
+		}
 
 		// Mentions
 		if (message.includes(config.get('username')))
@@ -189,6 +195,10 @@ function View(controller, config) {
 			}
 		}
 	}
+
+	this.appendActionMessage = function(timestamp, user, message, emotes) {
+		this.appendChatMessage(timestamp, user, message, emotes, true);
+	};
 
 	this.appendDebugMessage = function(message) {
 		var newMessageElem = $('#message-template').clone();

@@ -315,8 +315,7 @@ function View(controller, config) {
 
 			// Find candidates for this new fragment
 			var recentChatters = controller.recentChatters
-				.filter(username => username.toLowerCase().startsWith(fragment.toLowerCase()))
-				.sort();
+				.filter(username => username.toLowerCase().startsWith(fragment.toLowerCase()));
 			
 			var candidates = null;
 			if (fragment.startsWith('@')) {
@@ -324,9 +323,10 @@ function View(controller, config) {
 			} else {
 				candidates = controller.usableEmotes
 					.filter(emote => emote.toLowerCase().startsWith(fragment.toLowerCase()))
-					.concat(recentChatters)
-					.sort();
+					.concat(recentChatters);
 			}
+
+			candidates.sort();
 
 			if (candidates.length == 0)
 				return;

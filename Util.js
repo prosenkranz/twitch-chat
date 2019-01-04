@@ -21,6 +21,15 @@ function padZeros(num, size) {
 	return s;
 }
 
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }
+
 (function ($, undefined) {
 	// Credit to: https://stackoverflow.com/a/1909997
     $.fn.getCursorPosition = function() {

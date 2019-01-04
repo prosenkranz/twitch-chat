@@ -127,6 +127,9 @@ function View(controller, config) {
 	 * Injects emotes, hyperlinks, etc.
 	 */
 	var processMessage = function(message, user, emotes) {
+		// Escape already-existing html
+		message = escapeHtml(message);
+
 		// Hyperlinks
 		message = injectHyperlinks(message);
 

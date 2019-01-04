@@ -295,9 +295,12 @@ function View(controller, config) {
 		if (lastTypedWord.length == 0)
 			return;
 
+		// We need recent chatters sorted by name, instead of last seen date
+		var recentChatters = controller.recentChatters.sort();
+
 		var autoCompletions = (lastTypedWord[0] == '@'
-				? controller.recentChatters.map(function(x) { return "@" + x; })
-				: controller.usableEmotes.concat(controller.recentChatters));
+				? recentChatters.map(function(x) { return "@" + x; })
+				: controller.usableEmotes.concat(recentChatters));
 
 		// Find a replacement starting with (and NOT case-sensitively matching) the last typed (partial) word
 		var forceNext = false;

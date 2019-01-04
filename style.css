@@ -74,8 +74,9 @@ main {
 }
 #messages .badge {
 	display: inline-block;
-	vertical-align: middle;
+	vertical-align: baseline;
 	text-align: center;
+	margin-bottom: -0.25em;
 }
 #messages .message-user {
 	font-weight: bold;

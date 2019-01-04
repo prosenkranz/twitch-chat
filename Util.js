@@ -10,6 +10,11 @@ function formatTimestamp(millis) {
 		+ "." + padZeros(date.getMilliseconds(), 2)*/;
 }
 
+// Trim on right side only
+String.prototype.rtrim = function() {
+	return this.replace(/\s+$/, '');
+}
+
 function padZeros(num, size) {
 	var s = num+"";
 	while (s.length < size) s = "0" + s;

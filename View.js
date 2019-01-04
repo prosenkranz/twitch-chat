@@ -278,6 +278,17 @@ function View(controller, config) {
 		$('#input-message').val("");
 	}
 
+	var autocomplete = {
+		fragment: null, // the initial fragment to complete
+		candidates: null,
+		nextCandidate: 0,
+		cursorPos: null,
+		replaceStart: null // start of autocompleted word
+	}
+
+	this.resetAutoComplete = function() {
+		autocomplete.fragment = null;
+	}
 
 	this.doAutoComplete = function() {
 		var inputBox = $('#input-message');
@@ -288,38 +299,54 @@ function View(controller, config) {
 		var cursorPos = inputBox.getCursorPosition();
 		if (cursorPos == null || cursorPos == 0)
 			return;
+		
+		// Cursor pos changed outside of this function?
+		if (autocomplete.cursorPos != cursorPos)
+			this.resetAutoComplete();
+		
+		var ac = autocomplete;
 
-		// Get last typed word
-		var lastWhitespace = text.lastIndexOf(" ", cursorPos);
-		var lastTypedWord = text.substr(lastWhitespace + 1, cursorPos);
-		if (lastTypedWord.length == 0)
-			return;
+		if (ac.fragment == null) {
+			// Determine initial fragment
+			var replaceStart = text.lastIndexOf(" ", cursorPos - 2) + 1;
+			var fragment = text.substr(replaceStart, cursorPos).rtrim();
+			if (fragment.length == 0)
+				return;
 
-		// We need recent chatters sorted by name, instead of last seen date
-		var recentChatters = controller.recentChatters.sort();
-
-		var autoCompletions = (lastTypedWord[0] == '@'
-				? recentChatters.map(function(x) { return "@" + x; })
-				: controller.usableEmotes.concat(recentChatters));
-
-		// Find a replacement starting with (and NOT case-sensitively matching) the last typed (partial) word
-		var forceNext = false;
-		for (var i in autoCompletions) {
-			var replacement = autoCompletions[i];
-			if (replacement.toLowerCase().startsWith(lastTypedWord.toLowerCase()) || forceNext) {
-				if (lastTypedWord == replacement) {
-					// Use next replacement in list
-					forceNext = true;
-					continue;
-				}
-
-				// Replace last typed word
-				text = text.substr(0, lastWhitespace + 1).concat(replacement, text.substr(cursorPos));
-				inputBox.val(text);
-				inputBox.selectRange(lastWhitespace + 1 + replacement.length);
-				break;
+			// Find candidates for this new fragment
+			var recentChatters = controller.recentChatters
+				.filter(username => username.toLowerCase().startsWith(fragment.toLowerCase()))
+				.sort();
+			
+			var candidates = null;
+			if (fragment.startsWith('@')) {
+				candidates = recentChatters.map(function(x) { return '@' + x; });
+			} else {
+				candidates = controller.usableEmotes
+					.filter(emote => emote.toLowerCase().startsWith(fragment.toLowerCase()))
+					.concat(recentChatters)
+					.sort();
 			}
+
+			if (candidates.length == 0)
+				return;
+
+			ac.fragment = fragment;
+			ac.candidates = candidates;
+			ac.nextCandidate = 0;
+			ac.replaceStart = replaceStart;
 		}
+
+		// Loop through candidates
+		var replacement = ac.candidates[ac.nextCandidate] + " ";
+		text = text.substr(0, ac.replaceStart).concat(replacement, text.substr(cursorPos));
+		inputBox.val(text);
+		inputBox.selectRange(ac.replaceStart + replacement.length);
+
+		ac.cursorPos = ac.replaceStart + replacement.length;
+		ac.nextCandidate = (ac.nextCandidate + 1) % ac.candidates.length;
+
+		autocomplete = ac;
 	}
 
 	
@@ -333,6 +360,8 @@ function View(controller, config) {
 			if (event.keyCode === 9) {
 				view.doAutoComplete();
 				event.preventDefault();
+			} else {
+				view.resetAutoComplete();
 			}
 		});
 		

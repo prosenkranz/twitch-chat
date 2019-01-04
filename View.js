@@ -314,16 +314,17 @@ function View(controller, config) {
 				return;
 
 			// Find candidates for this new fragment
-			var recentChatters = controller.recentChatters
-				.filter(username => username.toLowerCase().startsWith(fragment.toLowerCase()));
-			
+			var recentChatters = controller.recentChatters;
 			var candidates = null;
 			if (fragment.startsWith('@')) {
-				candidates = recentChatters.map(function(x) { return '@' + x; });
+				candidates = recentChatters
+					.map(function(x) { return '@' + x; })	
+					.filter(username => username.toLowerCase().startsWith(fragment.toLowerCase()));
 			} else {
 				candidates = controller.usableEmotes
 					.filter(emote => emote.toLowerCase().startsWith(fragment.toLowerCase()))
-					.concat(recentChatters);
+					.concat(recentChatters
+						.filter(username => username.toLowerCase().startsWith(fragment.toLowerCase())));
 			}
 
 			candidates.sort();

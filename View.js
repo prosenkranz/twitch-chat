@@ -161,11 +161,22 @@ function View(controller, config) {
 				timestamp = currentTimeMillis();
 			}
 		}
+
+		if (typeof user.color === "undefined")
+			user.color = config.get('default_user_color', '#ffffff');
+
+		// Make sure user color has a minimum luminance
+		var userColorHsl = hexColorToHsl(user.color);
+		var minLuminance = config.get('min_user_color_luminance', 0.3);
+		if (userColorHsl[2] < minLuminance)
+			userColorHsl[2] = minLuminance;
+		var finalUserColor = hslToHexColor(userColorHsl[0], userColorHsl[1], userColorHsl[2]);
 		
+		// ADD THE NEW MESSAGE
 		var newMessageElem = $('#message-template').clone();
 		newMessageElem.attr('id', encodeMessageId(user.username, timestamp));
 		newMessageElem.find('.message-time').text(formatTimestamp(timestamp));
-		newMessageElem.find('.message-user').css('color', user.color);
+		newMessageElem.find('.message-user').css('color', finalUserColor);
 		newMessageElem.find('.message-username').text(user.displayName);
 
 		// Alternating backgrounds
@@ -174,7 +185,7 @@ function View(controller, config) {
 
 		// Action messages
 		if (isAction) {
-			newMessageElem.find('.message-text').css('color', user.color);
+			newMessageElem.find('.message-text').css('color', finalUserColor);
 			newMessageElem.find('.message-user-colon').remove();
 		}
 

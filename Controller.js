@@ -167,8 +167,16 @@ function Controller(clientId, config) {
 	 * On raw message
 	 */
 	this.onMessage = function(channel, userstate, message, self) {
-		var timestamp = ('tmi-sent-ts' in userstate) ? parseInt(userstate['tmi-sent-ts']) : -1;
 		var user = makeUserInfo(userstate, self);
+
+		var timestamp = null;
+		if ('tmi-sent-ts' in userstate) {
+			timestamp = parseInt(userstate['tmi-sent-ts']);
+		} else if (self) {
+			timestamp = currentTimeMillis();
+		} else {
+			timestamp = -1; // Append to end
+		}
 
 		// (Re-)add user to recently seen chatters list
 		var recentChatterName = (user.displayName || user.username);

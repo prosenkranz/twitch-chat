@@ -137,10 +137,18 @@ function View(controller, config) {
 	 * Returns the last message added to the messages pane (user or system)
 	 */
 	var getLastMessageId = function() {
-		return $('#messages .message').not('#message-template').last().attr('id');
+		var messages = $('#messages .message').not('#message-template');
+		if (messages.length == 0)
+			return null;
+
+		return messages.last().attr('id');
 	}
 
 	var getLastMessageTimestamp = function() {
+		var lastMessageId = getLastMessageId();
+		if (lastMessageId == null)
+			return currentTimeMillis();
+
 		return decodeMessageId(getLastMessageId()).timestamp;
 	}
 

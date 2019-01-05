@@ -134,6 +134,17 @@ function View(controller, config) {
 	}
 
 	/**
+	 * Returns the last message added to the messages pane (user or system)
+	 */
+	var getLastMessageId = function() {
+		return $('#messages .message').not('#message-template').last().attr('id');
+	}
+
+	var getLastMessageTimestamp = function() {
+		return decodeMessageId(getLastMessageId()).timestamp;
+	}
+
+	/**
 	 * Injects emotes, hyperlinks, etc.
 	 */
 	var processMessage = function(message, user, emotes) {
@@ -165,8 +176,7 @@ function View(controller, config) {
 		// If timestamp not given, use current latest timestamp
 		if (timestamp == null || timestamp == -1) {
 			if (messageElems.length > 0) {
-				var lastMessageIdData = decodeMessageId(messageElems.last().attr('id'));
-				timestamp = lastMessageIdData.timestamp;
+				timestamp = getLastMessageTimestamp();
 			}
 			else {
 				// No messages yet. First message will get current timestamp
@@ -256,26 +266,35 @@ function View(controller, config) {
 
 	this.appendSystemMessage = function(message) {
 		var newMessageElem = $('#message-template').clone();
-		newMessageElem.attr('id', encodeMessageId("system", currentTimeMillis()));
+		newMessageElem.attr('id', encodeMessageId("system", getLastMessageTimestamp()));
 		newMessageElem.addClass('system-message');
 		newMessageElem.find('.message-user').remove();
 		newMessageElem.find('.message-text').html(message);
 		$('#messages').append(newMessageElem);
 	};
 
-	this.appendSubscriptionMessage = function(username, message, method) {
+	this.appendSubscriptionMessage = function(username, sub) {
 		var newMessageElem = $('#message-template').clone();
-		newMessageElem.attr('id', encodeMessageId("system", currentTimeMillis()));
+		newMessageElem.attr('id', encodeMessageId("system", getLastMessageTimestamp()));
 		newMessageElem.addClass('system-message');
 		newMessageElem.addClass('subscription-message');
 		newMessageElem.find('.message-user').remove();
 		
-		var html = username + " just (re-)subscribed";
-		if (method.prime)
-			html += " with Twitch Prime";
+		var html = null;
+		if (sub.resub) {
+			html = username + " just resubscribed";
+			if (sub.method.prime)
+				html += " with Twitch Prime";
+			html += " for " + sub.months + " months in a row";
+		}
+		else {
+			html = username + " just subscribed";
+			if (sub.method.prime)
+				html += " with Twitch Prime";
+		}
 
-		if (message && message.length > 0)
-			html += ": " + processMessage(message);
+		if (sub.message && sub.message.length > 0)
+			html += ": " + processMessage(sub.message);
 
 		newMessageElem.find('.message-text').html(html);
 

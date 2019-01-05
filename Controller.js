@@ -227,7 +227,23 @@ function Controller(clientId, config) {
 	 * A user subscribed to the channel
 	 */
 	this.onSubscription = function(channel, username, method, message, userstate) {
-		view.appendSubscriptionMessage(username, message, method);
+		view.appendSubscriptionMessage(username, {
+			method: method,
+			message: message,
+			resub: false
+		});
+	}
+
+	/**
+	 * A user resubscribed to the channel
+	 */
+	this.onResubscription = function(channel, username, months, message, userstate, method) {
+		view.appendSubscriptionMessage(username, {
+			method: method,
+			message: message,
+			resub: true,
+			months: months
+		});
 	}
 
 	/**
@@ -278,6 +294,7 @@ function Controller(clientId, config) {
 		client.on("roomstate", this.onRoomState);
 		client.on("timeout", this.onUserTimeout);
 		client.on("subscription", this.onSubscription);
+		client.on("resub", this.onResubscription);
 
 		return true;
 	}
@@ -309,8 +326,8 @@ function ViewInterface() {
 	/** A specially formatted system message */
 	this.appendSystemMessage = function(message) {};
 
-	/** Show that someone subscribed to the channel */
-	this.appendSubscriptionMessage = function(username, message, method) {};
+	/** Show that someone (re-)subscribed to the channel */
+	this.appendSubscriptionMessage = function(username, subscriptionInfo) {};
 
 	/** Hide the messages of a user (e.g. because of a timeout or ban) */
 	this.hideMessagesOfUser = function(username) {};

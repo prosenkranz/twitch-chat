@@ -18,9 +18,17 @@ function View(controller, config) {
 		return {username: parts[0], timestamp: parseInt(parts[1])}
 	}
 
-	var injectOfficialEmotes = function(text, emotes) {
+	/**
+	 * @param {*} text possibly preprocessed
+	 * @param {*} origText The original message text directly from twitch, without any pre-processing
+	 * @param {*} emotes The emotes list from twitch
+	 */
+	var injectOfficialEmotes = function(text, origText, emotes) {
 		// Twitch sends us positions of emotes, based on characters
-		var splitText = text.split('');
+		// Since the message may already be preprocessed, we have to identify the
+		// emote codes using the original, un-preprocessed text. Then, in the
+		// actual text, we simply locate the new position by finding the occurence.
+		var words = text.split(/\s+/);
 		for (var i in emotes) {
 			var e = emotes[i];
 			for (var j in e) {
@@ -28,15 +36,17 @@ function View(controller, config) {
 				if (typeof mote == 'string') {
 					mote = mote.split('-');
 					mote = [parseInt(mote[0]), parseInt(mote[1])];
-					var length =  mote[1] - mote[0],
-						empty = Array.apply(null, new Array(length + 1)).map(function() { return '' });
-					splitText = splitText.slice(0, mote[0]).concat(empty).concat(splitText.slice(mote[1] + 1, splitText.length));
-					splitText.splice(mote[0], 1, '<span class="emoticon-wrapper">'
-						+ '<img class="emoticon" src="http://static-cdn.jtvnw.net/emoticons/v1/' + i + '/1.0"></span>');
+
+					var code = origText.slice(mote[0], mote[1] + 1);
+					words.forEach(function(word, k) {
+						if (word == code)
+							words[k] = '<span class="emoticon-wrapper">'
+							+ '<img class="emoticon" src="http://static-cdn.jtvnw.net/emoticons/v1/' + i + '/1.0"></span>';
+					});
 				}
 			}
 		}
-		return splitText.join('');
+		return words.join(' ');
 	}
 
 	/**
@@ -127,6 +137,8 @@ function View(controller, config) {
 	 * Injects emotes, hyperlinks, etc.
 	 */
 	var processMessage = function(message, user, emotes) {
+		var originalMessage = message;
+
 		// Escape already-existing html
 		message = escapeHtml(message);
 
@@ -136,7 +148,7 @@ function View(controller, config) {
 		// Emotes
 		message = (user && user.isSelf)
 			? injectOfficialEmotesFromEmotesets(message, controller.emotesets)
-			: injectOfficialEmotes(message, emotes);
+			: injectOfficialEmotes(message, originalMessage, emotes);
 
 		message = injectBTTVEmotes(message, controller.bttvEmotes, controller.bttvEmoteURLTemplate);
 		message = injectFFZEmotes(message);
@@ -162,7 +174,7 @@ function View(controller, config) {
 			}
 		}
 
-		if (typeof user.color === "undefined")
+		if (typeof user.color === "undefined" || user.color == null)
 			user.color = config.get('default_user_color', '#ffffff');
 
 		// Make sure user color has a minimum luminance
